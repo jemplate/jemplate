@@ -1,0 +1,108 @@
+#!/usr/bin/env testml
+
+run(*cmd) == *out
+  :"+ - '{*cmd}' output is correct"
+
+
+=== Test 1
+--- cmd: jemplate --help
+--- out
+usage:   jemplate <options...> <arguments...>
+
+    See 'man jemplate' for more help.
+
+    Common commands:
+
+      jemplate --compile --in=dir --to=python --post_chomp
+
+    Options:
+
+    -c, --compile         Compile templates to code
+    -r, --render          Render a specific template
+    -i, --in ...          Input file or directory
+    -b, --base ...        Base directory
+    -j, --jemplate ...    Jemplate input string
+    -e, --ext ...         Template file extension
+    -t, --to ...          Output language (go, js, pm, py)
+    -d, --data ...        Data file to use for --render
+
+    --pre-chomp ...       Set to -, =, ~ or +
+    --post-chomp ...      Set to -, =, ~ or +
+
+    --version             Print the jemplate version
+    --help                Show the command summary
+    -x, --debug           Print lots of debugging info
+
+
+=== Test 2
+--- cmd: jemplate --compile --to=py --in=test/01-test
+--- out
+from jemplate.runtime import JemplateRuntime
+
+class JemplateClass(JemplateRuntime):
+    def f1(self):
+        o = ''
+        o += 'Hello '
+        o += self.get('name')
+        o += ',\n\n'
+        o += self.process('message.tt')
+        o += '\n'
+        return o
+
+    def f2(self):
+        o = ''
+        o += 'Welcome to '
+        o += self.get('place')
+        o += '!!\n'
+        return o
+
+    def template_dict(self):
+        return {
+            'main.tt': self.f1,
+            'message.tt': self.f2,
+        }
+
+def render(template, data={}):
+    return JemplateClass().render(template, data)
+
+
+=== Test 3
+--- cmd: jemplate --compile --to=ast --in=test/01-test
+--- out(<)
+    ---
+    main.tt:
+    - text:
+      - 'Hello '
+      - ''
+      - ''
+    - var: name
+    - text:
+      - |+
+        ,
+
+      - ''
+      - ''
+    - process: message.tt
+    - text:
+      - "\n"
+      - ''
+      - ''
+    message.tt:
+    - text:
+      - 'Welcome to '
+      - ''
+      - ''
+    - var: place
+    - text:
+      - |
+        !!
+      - ''
+      - ''
+
+
+=== Test 4
+--- cmd: jemplate --render --in=test/01-test --data=test/01-test.yaml main.tt
+--- out
+Hello world,
+
+Welcome to the Jungle!!

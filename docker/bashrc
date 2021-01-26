@@ -1,0 +1,19 @@
+alias ll='ls -l'
+alias la='ls -la'
+
+alias ..='cd ..'
+alias ..2='cd ../..'
+alias ..3='cd ../../..'
+
+alias gbr='git branch'
+alias gcn='git clean -dxn'
+alias gcf='git clean -dxf'
+alias gd='git diff'
+alias grhh='git reset --hard'
+alias grv='git remote -v'
+alias gst='git status --ignored'
+
+ftf () (
+  find ${1:-.} -type f |
+    grep -v '\/\.git\/'
+)

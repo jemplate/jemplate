@@ -1,0 +1,15 @@
+# shellcheck shell=bash
+
+__() {
+  local bpan root want
+  bpan=$(dirname "${BASH_SOURCE[0]}")
+  root=$(dirname "$bpan")
+
+  export PATH=$bpan/bin:$bpan/lib:$PATH
+}
+
+__ "$@"
+
+unset __
+
+# vim: ft=sh:

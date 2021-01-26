@@ -1,0 +1,78 @@
+#
+# The Pegex grammar for the Jemplate language.
+#
+
+jemplate-stream:
+  init-text
+  (
+  | stmt-code
+  | stmt-text
+  )*
+
+stmt-code: (
+  | stmt-set
+  | stmt-process
+  | stmt-for
+  | stmt-assign
+  | stmt-expr
+) stmt-end
+
+init-text:
+  /( ALL*? ) text-end/
+
+stmt-text:
+  / text-beg ( ALL*? ) text-end /
+
+stmt-set:
+  / 'SET' + ( var-name ) - EQUAL -/ expr-any
+
+stmt-process:
+  'PROCESS' + expr-any var-list?
+
+stmt-if:
+  'IF' + stmt-any
+    stmt-any+
+  (
+    'ELSIF' + stmt-any
+    stmt-any+
+  )*
+  (
+    'ELSE' +
+    stmt-any+
+  )?
+  'END'
+
+stmt-for: 'XXX'
+
+stmt-assign:
+  / ( var-name ) - EQUAL -/ expr-any
+
+stmt-expr: expr-any+ % binary-op
+
+expr-any: (
+  | double-string
+  | single-string
+  | number-value
+  | paren-expr
+  | var-ref
+) -
+
+binary-op: /( [ PIPE DOT PLUS DASH ] ) -/
+double-string: / DOUBLE ((: BACK [ BACK DOUBLE ] | ANY )*?) DOUBLE /
+single-string: / SINGLE ((: BACK [ BACK SINGLE ] | ANY )*?) SINGLE /
+number-value: /( DASH? DIGIT+ (: DOT DIGIT+ )? )/
+paren-expr: LPAREN expr-any RPAREN
+var-ref: /( var-name )/
+var-list: (/( var-name ) EQUAL / expr-any)+
+
+var-name: / ALPHA WORD* /
+
+code-stmt:
+  assign-stmts
+
+tag-beg:    '[%'
+tag-end:    '%]'
+text-beg:   /( chomp-char? ) tag-end/
+text-end:   /(: tag-beg ( chomp-char?) - | EOS )/
+stmt-end:   /- (: SEMI - | (= chomp-char? tag-end) )/
+chomp-char: /[-+= TILDE]/

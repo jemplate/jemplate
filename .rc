@@ -1,0 +1,20 @@
+# shellcheck shell=bash
+
+[[ -n ${ZSH_VERSION-} ]] &&
+  JEMPLATE_ROOT="$0" ||
+  JEMPLATE_ROOT="${BASH_SOURCE[0]}"
+
+JEMPLATE_ROOT=$(cd "$(dirname "$JEMPLATE_ROOT")" && pwd)
+
+if [[ ! -e "$JEMPLATE_ROOT/ext" ]]; then
+  (
+    cd "$JEMPLATE_ROOT" || exit $?
+    make ext &>/dev/null
+  )
+fi
+
+export JEMPLATE_ROOT
+export PATH="$JEMPLATE_ROOT/bin:$JEMPLATE_ROOT/.bpan:$PATH"
+export MANPATH="$JEMPLATE_ROOT/man:$MANPATH"
+
+# vim: set ft=sh:

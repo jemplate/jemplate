@@ -1,0 +1,67 @@
+#!/usr/bin/env testml
+
+# Diff = False
+
+=>
+  compile(*jemplate).ast.n2y == *ast.y2y
+    :"+ - Compiled Jemplate AST is correct"
+  compile(*jemplate).python == *python
+    :"+ - Generated Jemplate Python module is correct"
+  render(*jemplate, *data) == *out
+    :"+ - Generated Jemplate Python module renders correctly"
+
+
+=== Test 1
+--- jemplate
+foo
+[% bar %]
+baz
+--- ast
+main.tt:
+- text: ["foo\n", '', '']
+- var: bar
+- text: ["\nbaz\n", '', '']
+--- python
+from jemplate.runtime import JemplateRuntime
+
+class JemplateClass(JemplateRuntime):
+    def f1(self):
+        o = ''
+        o += 'foo\n'
+        o += self.get('bar')
+        o += '\nbaz\n'
+        return o
+
+    def template_dict(self):
+        return {
+            'main.tt': self.f1,
+        }
+
+def render(template, data={}):
+    return JemplateClass().render(template, data)
+--- data
+bar: BAR BAR
+--- out
+foo
+BAR BAR
+baz
+
+
+=== Test 2
+--- jemplate
+Hello [% name %],
+
+[% PROCESS 'message.tt' %]
++++ message.tt
+Welcome to [% place %]!!
+--- ast
+main.tt:
+- text: ['Hello ', '', '']
+- var: name
+- text: [",\n\n", '', '']
+- process: message.tt
+- text: ["\n", '', '']
+message.tt:
+- text: ['Welcome to ', '', '']
+- var: place
+- text: ["!!\n", '', '']

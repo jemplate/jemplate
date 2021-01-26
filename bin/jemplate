@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+[[ ${JEMPLATE_ROOT-} ]] || {
+  echo "'JEMPLATE_ROOT' not set."
+  echo "You need to 'source /path/to/jemplate/.rc'."
+  exit 1
+}
+source "$JEMPLATE_ROOT/.bpan/init"
+source bash+ :std
+source getopt.bash
+
+
+GETOPT_SPEC="\
+  jemplate <options...> <arguments...>
+
+See 'man jemplate' for more help.
+
+Common commands:
+
+  jemplate --compile --in=dir --to=python --post_chomp
+
+Options:
+--
+c,compile     Compile templates to code
+r,render      Render a specific template
+i,in=         Input file or directory
+b,base=       Base directory
+j,jemplate=   Jemplate input string
+e,ext=        Template file extension
+t,to=         Output language (go, js, pm, py)
+d,data=       Data file to use for --render
+ 
+pre-chomp=    Set to -, =, ~ or +
+post-chomp=   Set to -, =, ~ or +
+ 
+version       Print the jemplate version
+help          Show the command summary
+x,debug       Print lots of debugging info
+"
+
+main() (
+  get-options "$@"
+
+  "command:$cmd" "${arguments[@]}"
+)
+
+command:compile() (
+  export PATH=$JEMPLATE_ROOT/src/compiler/bin:$PATH
+
+  [[ $option_to ]] ||
+    die "--compile requires --to"
+  [[ $option_to =~ ^(py|ast)$ ]] ||
+    die "--to='$option_to' invalid. Must be set to 'py' or 'ast'"
+
+  opts=(--to="$option_to")
+  if [[ $option_jemplate ]]; then
+    opts+=(--text="$option_jemplate")
+  elif [[ $option_in ]]; then
+    if [[ -d $option_in ]]; then
+      opts+=(--base="$option_in")
+      files=$(
+        cd "$option_in" &&
+        find . -type f |
+        cut -c3-
+      )
+      opts+=(--files="${files[*]}")
+    fi
+  fi
+  jemplate-compiler "${opts[@]}"
+)
+
+command:render() (
+  [[ $option_data ]] ||
+    die "--render requires --data=file.yaml"
+
+  option_to=py
+  python_module=$(command:compile)
+  tempdir=$(mktemp -d)
+  echo "$python_module" > "$tempdir/jemplatetemplates.py"
+  export PYTHONPATH=$tempdir:$JEMPLATE_ROOT/src/python/lib
+
+  python3 -c "
+import jemplatetemplates, yaml
+text = open('$option_data').read()
+data = yaml.safe_load(text)
+output = jemplatetemplates.render('main.tt', data)
+print(output, end='')
+"
+)
+
+get-options() {
+  GETOPT_ARGS='@arguments' getopt "$@"
+
+  $option_debug && set -x
+
+  if $option_compile; then
+    cmd=compile
+  elif $option_render; then
+    cmd=render
+  else
+    die "Must use --compile or --render"
+  fi
+}
+
+main "$@"
